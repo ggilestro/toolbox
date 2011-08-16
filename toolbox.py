@@ -3,7 +3,7 @@
 #
 #       toolbox.py
 #       
-#       Copyright 2011 Giorgio Gilestro <gg@bio-ggilestr>
+#       Copyright 2011 Giorgio Gilestro <giorgio@gilest.ro>
 #       
 #       This program is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 import os
 
+#Some nice colors for matplotlib plotting
 colors = {   'Blue': '#0066cc',
              'Blue Marine': '#466086',
              'Bright Yellow': '#ffff00',
@@ -43,18 +44,44 @@ colors = {   'Blue': '#0066cc',
              'Red': '#cc0033',
              'Yellow': '#ffcc00'
              }
-                    
 
+
+class partial:
+    """
+    AKA curry
+    This function allows calling another function upon event trigger and pass arguments to it
+    
+    buttonA.Bind (wx.EVT_BUTTON, partial(self.Print, 'Hello World!'))
+    
+    """
+
+    def __init__(self, fun, *args, **kwargs):
+        self.fun = fun
+        self.pending = args[:]
+        self.kwargs = kwargs.copy()
+
+    def __call__(self, *args, **kwargs):
+        if kwargs and self.kwargs:
+            kw = self.kwargs.copy()
+            kw.update(kwargs)
+        else:
+            kw = kwargs or self.kwargs
+
+        return self.fun(*(self.pending + args), **kw)                    
 
 def changeFileExtension(filename, ext):
     """
     Return a filename with a new extension
-    """
-    if ext[0] != '.': ext = '.' + ext
-    fname, old_ext = os.path.splitext(filename)
     
-    return fname + ext
-
+    filename        a valid filename or full path
+    ext             the new extension 
+    
+    """
+    
+    if not ext.startswith('.'): ext = '.' + ext
+    f,_ = os.path.splitext(filename)
+    
+    return f + ext
 
 
 if __name__ == '__main__':
