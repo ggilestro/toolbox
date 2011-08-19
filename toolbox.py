@@ -21,6 +21,7 @@
 #       MA 02110-1301, USA.
 
 import os
+import ConfigParser
 
 #Some nice colors for matplotlib plotting
 colors = {   'Blue': '#0066cc',
@@ -46,6 +47,124 @@ colors = {   'Blue': '#0066cc',
              }
 
 
+class myconfig():
+    """
+    Handles program configuration
+    Uses ConfigParser to store and retrieve
+    From gg's toolbox
+    """
+    def __init__(self, filename=None, temporary=False, defaultOptions=None):
+        """
+        filename    the name of the configuration file
+        temporary   whether we are reading and storing values temporarily
+        defaultOptions  a dict containing the defaultOptions
+        """
+        
+        filename = filename or 'config.cfg'
+        pDir = os.getcwd()
+        if not os.access(pDir, os.W_OK): pDir = os.environ['HOME']
+
+        self.filename = os.path.join (pDir, filename)
+        self.filename_temp = '%s~' % self.filename
+        
+        self.config = None
+        
+        if defaultOptions != None: 
+            self.defaultOptions = defaultOptions
+        else:
+            self.defaultOptions = { "option" : [0, "desc"],
+                                    }
+        
+        self.Read(temporary)
+
+    def New(self, filename):
+        """
+        """
+        self.filename = filename
+        self.Read()  
+
+    def Read(self, temporary=False):
+        """
+        read the configuration file. Initiate one if does not exist
+        
+        temporary       True                Read the temporary file instead
+                        False  (Default)     Read the actual file
+        """
+
+        if temporary: filename = self.filename_temp
+        else: filename = self.filename        
+        
+        if os.path.exists(filename):
+            self.config = ConfigParser.RawConfigParser()
+            self.config.read(filename)   
+            
+        else:
+            self.Save(temporary, newfile=True)
+
+                               
+    def Save(self, temporary=False, newfile=False):
+        """
+        """
+        if temporary: filename = self.filename_temp
+        else: filename = self.filename
+            
+        if newfile:
+            self.config = ConfigParser.RawConfigParser()
+            self.config.add_section('Options')
+            
+            for key in self.defaultOptions:
+                self.config.set('Options', key, self.defaultOptions[key][0])
+
+        with open(filename, 'wb') as configfile:
+            self.config.write(configfile)
+    
+        if not temporary: self.Save(temporary=True)
+
+
+    def SetValue(self, section, key, value):
+        """
+        """
+        
+        if not self.config.has_section(section):
+            self.config.add_section(section)
+        
+        self.config.set(section, key, value)
+        
+    def GetValue(self, section, key):
+        """
+        get value from config file
+        Does some sanity checking to return tuple, integer and strings 
+        as required.
+        """
+        r = self.config.get(section, key)
+        
+        if type(r) == type(0) or type(r) == type(1.0): #native int and float
+            return r
+        elif type(r) == type(True): #native boolean
+            return r
+        elif type(r) == type(''):
+            r = r.split(',')
+        
+        if len(r) == 2: #tuple
+            r = tuple([int(i) for i in r]) # tuple
+        
+        elif len(r) < 2: #string or integer
+            try:
+                r = int(r[0]) #int as text
+            except:
+                r = r[0] #string
+        
+        if r == 'False' or r == 'True':
+            r = (r == 'True') #bool
+        
+        return r
+                
+
+    def GetOption(self, key):
+        """
+        """
+        return self.GetValue('Options', key)
+        
 class partial:
     """
     AKA curry
